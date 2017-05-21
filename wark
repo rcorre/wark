@@ -1,0 +1,18 @@
+import weechat
+
+weechat.register("wark", "rcorre", "0.1", "MIT", "Spark Client", "", "")
+weechat.prnt("", "hi")
+
+def buffer_input_cb(data, buf, input_data):
+    weechat.prnt(buf, input_data)
+    return weechat.WEECHAT_RC_OK
+
+def buffer_close_cb(data, buf):
+    return weechat.WEECHAT_RC_OK
+
+buf = weechat.buffer_new("mybuffer", "buffer_input_cb", "", "buffer_close_cb", "")
+weechat.buffer_set(buf, "spark", "Spark")
+weechat.prnt(buf, "Connecting to Cisco Spark...")
+
+# disable logging, by setting local variable "no_log" to "1"
+#weechat.buffer_set(buf, "localvar_set_no_log", "1")
