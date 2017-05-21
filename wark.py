@@ -8,6 +8,22 @@ FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
 weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
 
 
+spark_session=None
+
+
+def room_list(buf):
+    names = [room.title for room in rooms.Room.get(spark_session)]
+    weechat.prnt(buf, 'rooms: ' + ', '.join(names))
+    return weechat.WEECHAT_RC_OK
+
+
+COMMANDS = {
+    'room': {
+        'list': room_list,
+    }
+}
+
+
 def buffer_input_cb(data, buf, input_data):
     weechat.prnt(buf, input_data)
     return weechat.WEECHAT_RC_OK
@@ -26,17 +42,23 @@ def config_cb(data, option, value):
 weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
 
 
-def history(buf, args):
-    return weechat.WEECHAT_RC_OK
+def spark_command_cb(data, buf, command):
+    parts = command.split(' ')
+    cmd = parts[0]
+    subcmd = parts[1]
+    args = parts[2:]
 
-
-def spark_command_cb(data, buf, args):
-    args = args.split(' ')
-    cmd = args[0]
-    if cmd == "history":
-        return history(buf, args[1:])
-    else:
+    if not cmd in COMMANDS:
         weechat.prnt(buf, "Unknown command " + cmd)
+        return weechat.WEECHAT_RC_ERROR
+    if not subcmd in COMMANDS[cmd]:
+        weechat.prnt(buf, "Unknown command " + subcmd)
+        return weechat.WEECHAT_RC_ERROR
+
+    try:
+        COMMANDS[cmd][subcmd](buf, *args)
+        return weechat.WEECHAT_RC_OK
+    except:
         return weechat.WEECHAT_RC_ERROR
 
 
