@@ -26,12 +26,41 @@ def config_cb(data, option, value):
 weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
 
 
+def history(buf, args):
+    return weechat.WEECHAT_RC_OK
+
+
+def spark_command_cb(data, buf, args):
+    args = args.split(' ')
+    cmd = args[0]
+    if cmd == "history":
+        return history(buf, args[1:])
+    else:
+        weechat.prnt(buf, "Unknown command " + cmd)
+        return weechat.WEECHAT_RC_ERROR
+
+
+weechat.hook_command(
+    # Command name and description
+    'spark', '',
+    # Usage
+    '[command] [command options]',
+    # Description of arguments
+    'Commands:\n' +
+    '\n'.join(['history']) +
+    '\nUse /spark help [command] to find out more\n',
+    # Completions
+    '',
+    # Function name
+    'spark_command_cb', '')
+
+
 def init():
     weechat.prnt("", "Initializing Spark plugin...")
     token = weechat.config_get_plugin("token")
     spark_session = session.Session('https://api.ciscospark.com', token)
     for room in rooms.Room.get(spark_session):
-        buf = weechat.buffer_new(room.title, "buffer_input_cb", "",
+        buf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
                                  "buffer_close_cb", "")
         weechat.buffer_set(buf, "title", room.title)
     weechat.prnt("", "Spark plugin initialized!")
