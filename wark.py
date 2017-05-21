@@ -1,5 +1,6 @@
+import time
 import weechat
-from spark import rooms, session
+from spark import rooms, session, messages
 
 SCRIPT_NAME = "spark"
 FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
@@ -29,9 +30,13 @@ def room_list(buf):
 
 def room_open(buf, name):
     room = roomlist[name]
-    buf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
-                             "buffer_close_cb", "")
+    newbuf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
+                                "buffer_close_cb", "")
     weechat.buffer_set(buf, "title", room.title)
+    for msg in room.get_messages(spark_session):
+        ts = time.strptime(msg.created, '%Y-%m-%dT%H:%M:%S.%fZ')
+        unixtime = int(time.mktime(ts))
+        weechat.prnt_date_tags(newbuf, unixtime, "", msg.text)
 
 
 COMMANDS = {
