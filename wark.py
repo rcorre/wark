@@ -9,19 +9,7 @@ weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
 
 
 spark_session=None
-
-
-def room_list(buf):
-    names = [room.title for room in rooms.Room.get(spark_session)]
-    weechat.prnt(buf, 'rooms: ' + ', '.join(names))
-    return weechat.WEECHAT_RC_OK
-
-
-COMMANDS = {
-    'room': {
-        'list': room_list,
-    }
-}
+roomlist={}
 
 
 def buffer_input_cb(data, buf, input_data):
@@ -31,6 +19,27 @@ def buffer_input_cb(data, buf, input_data):
 
 def buffer_close_cb(data, buf):
     return weechat.WEECHAT_RC_OK
+
+
+def room_list(buf):
+    weechat.prnt(buf, '--Rooms--')
+    weechat.prnt(buf, '\n'.join(roomlist.keys()))
+    weechat.prnt(buf, '---------')
+
+
+def room_open(buf, name):
+    room = roomlist[name]
+    buf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
+                             "buffer_close_cb", "")
+    weechat.buffer_set(buf, "title", room.title)
+
+
+COMMANDS = {
+    'room': {
+        'list': room_list,
+        'open': room_open,
+    }
+}
 
 
 def config_cb(data, option, value):
@@ -58,7 +67,8 @@ def spark_command_cb(data, buf, command):
     try:
         COMMANDS[cmd][subcmd](buf, *args)
         return weechat.WEECHAT_RC_OK
-    except:
+    except Exception as ex:
+        weechat.prnt(buf, 'Error: {}'.format(ex))
         return weechat.WEECHAT_RC_ERROR
 
 
@@ -78,13 +88,12 @@ weechat.hook_command(
 
 
 def init():
+    global roomlist
+    global spark_session
     weechat.prnt("", "Initializing Spark plugin...")
     token = weechat.config_get_plugin("token")
     spark_session = session.Session('https://api.ciscospark.com', token)
-    for room in rooms.Room.get(spark_session):
-        buf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
-                                 "buffer_close_cb", "")
-        weechat.buffer_set(buf, "title", room.title)
+    roomlist = {room.title: room for room in rooms.Room.get(spark_session)}
     weechat.prnt("", "Spark plugin initialized!")
 
 
