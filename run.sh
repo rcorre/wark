@@ -1,2 +1,2 @@
-cp wark weechat/python/autoload/
+cp wark.py weechat/python/autoload/
 weechat -d weechat
