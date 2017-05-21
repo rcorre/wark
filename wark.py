@@ -1,14 +1,12 @@
 import weechat
 from spark import rooms, session
 
-weechat.register("wark", "rcorre", "0.1", "MIT", "Spark Client", "", "")
+SCRIPT_NAME = "spark"
+FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
 
-if not weechat.config_is_set_plugin("token"):
-    weechat.prnt("",
-        "Spark token not set. Run: /set plugins.var.wark.token <token>")
 
-token = weechat.config_get_plugin("token")
-session = session.Session('https://api.ciscospark.com', token)
+weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
+
 
 def buffer_input_cb(data, buf, input_data):
     weechat.prnt(buf, input_data)
@@ -19,10 +17,28 @@ def buffer_close_cb(data, buf):
     return weechat.WEECHAT_RC_OK
 
 
-# disable logging, by setting local variable "no_log" to "1"
-#weechat.buffer_set(buf, "localvar_set_no_log", "1")
+def config_cb(data, option, value):
+    if option == FULL_NAME + ".token":
+        init()
+    return weechat.WEECHAT_RC_OK
 
 
-for room in rooms.Room.get(session):
-    buf = weechat.buffer_new(room.title, "buffer_input_cb", "", "buffer_close_cb", "")
-    weechat.buffer_set(buf, "title", room.title)
+weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
+
+
+def init():
+    weechat.prnt("", "Initializing Spark plugin...")
+    token = weechat.config_get_plugin("token")
+    spark_session = session.Session('https://api.ciscospark.com', token)
+    for room in rooms.Room.get(spark_session):
+        buf = weechat.buffer_new(room.title, "buffer_input_cb", "",
+                                 "buffer_close_cb", "")
+        weechat.buffer_set(buf, "title", room.title)
+    weechat.prnt("", "Spark plugin initialized!")
+
+
+if weechat.config_is_set_plugin("token"):
+    init()
+else:
+    weechat.prnt("", "Spark token unset")
+    weechat.prnt("", "Run /set {}.token <token>".format(FULL_NAME))
