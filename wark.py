@@ -56,15 +56,6 @@ COMMANDS = {
 }
 
 
-def config_cb(data, option, value):
-    if option == FULL_NAME + ".token":
-        init()
-    return weechat.WEECHAT_RC_OK
-
-
-weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
-
-
 def spark_command_cb(data, buf, command):
     parts = shlex.split(command)
     cmd = parts[0]
