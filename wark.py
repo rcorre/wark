@@ -51,10 +51,8 @@ def room_open(buf, name):
 
 
 COMMANDS = {
-    'room': {
-        'list': room_list,
-        'open': room_open,
-    }
+    'rooms': room_list,
+    'open': room_open,
 }
 
 
@@ -70,18 +68,14 @@ weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
 def spark_command_cb(data, buf, command):
     parts = shlex.split(command)
     cmd = parts[0]
-    subcmd = parts[1]
-    args = parts[2:]
+    args = parts[1:]
 
     if not cmd in COMMANDS:
         weechat.prnt(buf, "Unknown command " + cmd)
         return weechat.WEECHAT_RC_ERROR
-    if not subcmd in COMMANDS[cmd]:
-        weechat.prnt(buf, "Unknown command " + subcmd)
-        return weechat.WEECHAT_RC_ERROR
 
     try:
-        COMMANDS[cmd][subcmd](buf, *args)
+        COMMANDS[cmd](buf, *args)
         return weechat.WEECHAT_RC_OK
     except CommandException as ex:
         weechat.prnt(buf, 'Error: {}'.format(ex))
