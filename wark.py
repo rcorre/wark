@@ -16,6 +16,10 @@ rooms = {room.title: room for room in api.rooms.list()}
 weechat.prnt("", "Spark plugin initialized!")
 
 
+class CommandException(Exception):
+    pass
+
+
 def buffer_input_cb(data, buf, input_data):
     weechat.prnt(buf, input_data)
     return weechat.WEECHAT_RC_OK
@@ -35,11 +39,14 @@ def room_open(buf, name):
     room = rooms[name]
     newbuf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
                                 "buffer_close_cb", "")
-    parse_time = lambda m: time.strptime(m.created, '%Y-%m-%dT%H:%M:%S.%fZ')
+    def unixtime(msg):
+        t = time.strptime(msg.created, '%Y-%m-%dT%H:%M:%S.%fZ')
+        return int(time.mktime(t))
+
     messages = api.messages.list(roomId=room.id)
-    for msg in messages:
-        unixtime = int(time.mktime(parse_time(msg)))
-        weechat.prnt_date_tags(newbuf, unixtime, "", msg.text)
+    for msg in sorted(messages, key=unixtime):
+        text = msg.text.encode('ascii', 'replace')
+        weechat.prnt_date_tags(newbuf, unixtime(msg), "", text)
 
 
 COMMANDS = {
@@ -75,7 +82,7 @@ def spark_command_cb(data, buf, command):
     try:
         COMMANDS[cmd][subcmd](buf, *args)
         return weechat.WEECHAT_RC_OK
-    except Exception as ex:
+    except CommandException as ex:
         weechat.prnt(buf, 'Error: {}'.format(ex))
         return weechat.WEECHAT_RC_ERROR
 
