@@ -92,6 +92,6 @@ weechat.hook_command(
     '\n'.join(['history']) +
     '\nUse /spark help [command] to find out more\n',
     # Completions
-    '',
+    '|'.join(COMMANDS.keys()),
     # Function name
     'spark_command_cb', '')
