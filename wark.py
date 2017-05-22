@@ -45,7 +45,7 @@ def room_open(buf, name):
         return int(time.mktime(t))
 
     messages = api.messages.list(roomId=room.id)
-    for msg in messages:
+    for msg in sorted(messages, key=unixtime):
         text = msg.text.encode('ascii', 'replace') if msg.text else ''
         weechat.prnt_date_tags(newbuf, unixtime(msg), "", text)
 
