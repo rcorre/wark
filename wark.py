@@ -1,4 +1,5 @@
 import time
+import shlex
 import weechat
 from ciscosparkapi import CiscoSparkAPI
 
@@ -67,7 +68,7 @@ weechat.hook_config(FULL_NAME + ".*", "config_cb", "")
 
 
 def spark_command_cb(data, buf, command):
-    parts = command.split(' ')
+    parts = shlex.split(command)
     cmd = parts[0]
     subcmd = parts[1]
     args = parts[2:]
