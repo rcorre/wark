@@ -1,6 +1,7 @@
 import time
 import weechat
-from spark import rooms, session, messages
+from ciscosparkapi import CiscoSparkAPI
+
 
 SCRIPT_NAME = "spark"
 FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
@@ -9,8 +10,10 @@ FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
 weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
 
 
-spark_session=None
-roomlist={}
+weechat.prnt("", "Initializing Spark plugin...")
+api = CiscoSparkAPI()
+rooms = {room.title: room for room in api.rooms.list()}
+weechat.prnt("", "Spark plugin initialized!")
 
 
 def buffer_input_cb(data, buf, input_data):
@@ -24,18 +27,18 @@ def buffer_close_cb(data, buf):
 
 def room_list(buf):
     weechat.prnt(buf, '--Rooms--')
-    weechat.prnt(buf, '\n'.join(roomlist.keys()))
+    weechat.prnt(buf, '\n'.join(rooms.keys()))
     weechat.prnt(buf, '---------')
 
 
 def room_open(buf, name):
-    room = roomlist[name]
+    room = rooms[name]
     newbuf = weechat.buffer_new("spark." + room.title, "buffer_input_cb", "",
                                 "buffer_close_cb", "")
-    weechat.buffer_set(buf, "title", room.title)
-    for msg in room.get_messages(spark_session):
-        ts = time.strptime(msg.created, '%Y-%m-%dT%H:%M:%S.%fZ')
-        unixtime = int(time.mktime(ts))
+    parse_time = lambda m: time.strptime(m.created, '%Y-%m-%dT%H:%M:%S.%fZ')
+    messages = api.messages.list(roomId=room.id)
+    for msg in messages:
+        unixtime = int(time.mktime(parse_time(msg)))
         weechat.prnt_date_tags(newbuf, unixtime, "", msg.text)
 
 
@@ -90,20 +93,3 @@ weechat.hook_command(
     '',
     # Function name
     'spark_command_cb', '')
-
-
-def init():
-    global roomlist
-    global spark_session
-    weechat.prnt("", "Initializing Spark plugin...")
-    token = weechat.config_get_plugin("token")
-    spark_session = session.Session('https://api.ciscospark.com', token)
-    roomlist = {room.title: room for room in rooms.Room.get(spark_session)}
-    weechat.prnt("", "Spark plugin initialized!")
-
-
-if weechat.config_is_set_plugin("token"):
-    init()
-else:
-    weechat.prnt("", "Spark token unset")
-    weechat.prnt("", "Run /set {}.token <token>".format(FULL_NAME))

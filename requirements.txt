@@ -1,1 +1,1 @@
-spark-python==0.0.13
+ciscosparkapi==0.5.5
