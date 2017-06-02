@@ -14,12 +14,11 @@ SCRIPT_NAME = "spark"
 FULL_NAME = "plugins.var.python.{}".format(SCRIPT_NAME)
 SPARK_SOCKET_URL = 'https://wdm-a.wbx2.com/wdm/api/v1/devices'
 
-weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
 
-weechat.prnt("", "Initializing Spark plugin...")
+api = None
+listener = None
+rooms = None
 
-api = CiscoSparkAPI()
-rooms = {room.title: room for room in api.rooms.list()}
 
 # Cisco Spark has a websocket interface to listen for message events
 # It isn't documented, I found it here:
@@ -39,7 +38,8 @@ class EventListener(WebSocketClient):
         self.bearer = 'Bearer ' + os.getenv("SPARK_ACCESS_TOKEN")
         self.headers = {'Authorization': self.bearer}
 
-        resp = requests.post(SPARK_SOCKET_URL, headers=self.headers, json=spec)
+        resp = requests.post(SPARK_SOCKET_URL, headers=self.headers, json=spec,
+                             timeout=10.0)
         if resp.status_code != 200:
             print("Failed to register device {}: {}".format(name, resp.json()))
         info = resp.json()
@@ -57,7 +57,8 @@ class EventListener(WebSocketClient):
         }))
 
     def closed(self, code, reason=None):
-        resp = requests.delete(self.dev_url, headers=self.headers)
+        resp = requests.delete(self.dev_url, headers=self.headers,
+                               timeout=10.0)
         if resp.status_code != 200:
             print("Failed to unregister websocket device from Spark")
 
@@ -86,14 +87,6 @@ class EventListener(WebSocketClient):
         else:
             print('Unknown event {}'.format(ev))
 
-print('Initializing event listener')
-listener = EventListener()
-print('Connecting event listener')
-listener.connect()
-print('Running event listener')
-listener.run_forever()
-
-weechat.prnt("", "Spark plugin initialized!")
 
 class CommandException(Exception):
     pass
@@ -164,3 +157,10 @@ weechat.hook_command(
     '|'.join(COMMANDS.keys()),
     # Function name
     'spark_command_cb', '')
+
+
+weechat.register(SCRIPT_NAME, "rcorre", "0.1", "MIT", "Spark Client", "", "")
+api = CiscoSparkAPI()
+rooms = {room.title: room for room in api.rooms.list()}
+listener = EventListener()
+listener.connect()
